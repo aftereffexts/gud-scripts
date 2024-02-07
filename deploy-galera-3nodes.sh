@@ -1,13 +1,5 @@
 #!/bin/bash
 
-# Add-DnsServerResourceRecord -ZoneName "srv-vm-db01" -A -Name "www" -IPv4Address "10.200.0.4" -ZoneScope "Node1"
-# Add-DnsServerResourceRecord -ZoneName "srv-vm-db01" -A -Name "www" -IPv4Address "10.200.0.2" -ZoneScope "Node2"
-# Add-DnsServerResourceRecord -ZoneName "srv-vm-db01" -A -Name "www" -IPv4Address "10.200.0.3" -ZoneScope "Node3"
-
-# Add-DnsServerQueryResolutionPolicy -Name "DC01ROUNDR" -Action ALLOW -ZoneScope "Node1,2;Node2,1;Node3,1" -ZoneName "srv-vm-db01"
-
-# Add-DnsServerQueryResolutionPolicy -Name "Roundrobindc01" -Action ALLOW -ZoneScope "Node1,2;Node2,1;Node3,1" -ZoneName "srv-vm-db01"
-
 if [ "$EUID" -ne 0 ]; then
   echo "Gimme some root access"
   exit 1
@@ -19,12 +11,12 @@ fi
 NODE1="10.200.0.4"
 NODE2="10.200.0.2"
 NODE3="10.200.0.3"
-CLUSTERNAME="ITCares-APP-Cluster"
+CLUSTERNAME="XXXX-APP-Cluster"
 #Gateway
 NETGW="10.200.0.1"
-
+NETMASK="255.255.255.0"
 #primary DNS, secondary DNS
-NETDNS="10.200.0.1,8.8.8.8"
+NETDNS="10.200.0.11,8.8.8.8"
 
 
 NODE1_HOSTNAME="srv-vm-node1-db01"
@@ -32,8 +24,8 @@ NODE2_HOSTNAME="srv-vm-node2-db01"
 NODE3_HOSTNAME="srv-vm-node3-db01"
 
 # change Variables to your own passwords
-USERPW="golzeabi!22"
-ROOTPW="MlS5v1TH8ACGVZWm"
+USERPW="URUSERPW"
+ROOTPW="URROOTPW"
 
 
 echo "Changing passwords from default"
@@ -47,15 +39,6 @@ echo "disable ipv6"
 echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
 sysctl -p
 
-#if [ "$HOSTNAME" = "$NODE1_HOSTNAME" ]; then
-#nmcli con mod "Wired connection 1" ipv4.addresses "$NODE1/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
-#elif [ "$HOSTNAME" = "$NODE2_HOSTNAME" ]; then
-#nmcli con mod "Wired connection 1" ipv4.addresses "$NODE2/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
-#elif [ "$HOSTNAME" = "$NODE3_HOSTNAME" ]; then
-#nmcli con mod "Wired connection 1" ipv4.addresses "$NODE3/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
-#else
-#    printf '%s\n' "uh-oh, wrong host ($HOSTNAME)"
-#fi
 
 if [ "$HOSTNAME" = "$NODE1_HOSTNAME" ]; then
 printf '%s\n' "on the right host ($HOSTNAME)"
@@ -71,9 +54,9 @@ printf '%s\n' "on the right host ($HOSTNAME)"
     allow-hotplug ens192
     iface ens192 inet static
             address $NODE1
-            netmask 255.255.255.0
-            gateway 10.200.0.1
-    dns-nameservers 10.200.0.11
+            netmask $NETMASK
+            gateway $NETGW
+    dns-nameservers $NETDNS
 EOF
 
 elif [ "$HOSTNAME" = "$NODE2_HOSTNAME" ]; then
@@ -90,9 +73,9 @@ printf '%s\n' "on the right host ($HOSTNAME)"
     allow-hotplug ens192
     iface ens192 inet static
             address $NODE2
-            netmask 255.255.255.0
-            gateway 10.200.0.1
-    dns-nameservers 10.200.0.11
+            netmask $NETMASK
+            gateway $NETGW
+    dns-nameservers $NETDNS
 EOF
 
 elif [ "$HOSTNAME" = "$NODE3_HOSTNAME" ]; then
@@ -109,9 +92,9 @@ printf '%s\n' "on the right host ($HOSTNAME)"
     allow-hotplug ens192
     iface ens192 inet static
         address $NODE3
-        netmask 255.255.255.0
-        gateway 10.200.0.1
-    dns-nameservers 10.200.0.11
+        netmask $NETMASK
+        gateway $NETGW
+    dns-nameservers $NETDNS
 EOF
 
 else
