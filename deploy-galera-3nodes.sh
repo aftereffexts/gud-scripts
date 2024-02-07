@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Add-DnsServerResourceRecord -ZoneName "srv-vm-db01" -A -Name "www" -IPv4Address "10.200.0.4" -ZoneScope "Node1"
+# Add-DnsServerResourceRecord -ZoneName "srv-vm-db01" -A -Name "www" -IPv4Address "10.200.0.2" -ZoneScope "Node2"
+# Add-DnsServerResourceRecord -ZoneName "srv-vm-db01" -A -Name "www" -IPv4Address "10.200.0.3" -ZoneScope "Node3"
+
+# Add-DnsServerQueryResolutionPolicy -Name "DC01ROUNDR" -Action ALLOW -ZoneScope "Node1,2;Node2,1;Node3,1" -ZoneName "srv-vm-db01"
+
+# Add-DnsServerQueryResolutionPolicy -Name "Roundrobindc01" -Action ALLOW -ZoneScope "Node1,2;Node2,1;Node3,1" -ZoneName "srv-vm-db01"
+
 if [ "$EUID" -ne 0 ]; then
   echo "Gimme some root access"
   exit 1
@@ -19,9 +27,9 @@ NETGW="10.200.0.1"
 NETDNS="10.200.0.1,8.8.8.8"
 
 
-NODE1_HOSTNAME="srv-vm-node1-DB01"
-NODE2_HOSTNAME="srv-vm-node2-DB01"
-NODE3_HOSTNAME="srv-vm-node3-DB01"
+NODE1_HOSTNAME="srv-vm-node1-db01"
+NODE2_HOSTNAME="srv-vm-node2-db01"
+NODE3_HOSTNAME="srv-vm-node3-db01"
 
 # change Variables to your own passwords
 USERPW="golzeabi!22"
@@ -39,12 +47,73 @@ echo "disable ipv6"
 echo "net.ipv6.conf.all.disable_ipv6 = 1" >> /etc/sysctl.conf
 sysctl -p
 
+#if [ "$HOSTNAME" = "$NODE1_HOSTNAME" ]; then
+#nmcli con mod "Wired connection 1" ipv4.addresses "$NODE1/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
+#elif [ "$HOSTNAME" = "$NODE2_HOSTNAME" ]; then
+#nmcli con mod "Wired connection 1" ipv4.addresses "$NODE2/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
+#elif [ "$HOSTNAME" = "$NODE3_HOSTNAME" ]; then
+#nmcli con mod "Wired connection 1" ipv4.addresses "$NODE3/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
+#else
+#    printf '%s\n' "uh-oh, wrong host ($HOSTNAME)"
+#fi
+
 if [ "$HOSTNAME" = "$NODE1_HOSTNAME" ]; then
-nmcli con mod "Wired connection 1" ipv4.addresses "$NODE1/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
+printf '%s\n' "on the right host ($HOSTNAME)"
+    rm /etc/network/interfaces
+
+    cat <<EOF > /etc/network/interfaces
+    source /etc/network/interfaces.d/*
+
+    #loopback interface
+    auto lo
+    iface lo inet loopback
+
+    allow-hotplug ens192
+    iface ens192 inet static
+            address $NODE1
+            netmask 255.255.255.0
+            gateway 10.200.0.1
+    dns-nameservers 10.200.0.11
+EOF
+
 elif [ "$HOSTNAME" = "$NODE2_HOSTNAME" ]; then
-nmcli con mod "Wired connection 1" ipv4.addresses "$NODE2/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
+printf '%s\n' "on the right host ($HOSTNAME)"
+    rm /etc/network/interfaces
+
+    cat <<EOF > /etc/network/interfaces
+    source /etc/network/interfaces.d/*
+
+    #loopback interface
+    auto lo
+    iface lo inet loopback
+
+    allow-hotplug ens192
+    iface ens192 inet static
+            address $NODE2
+            netmask 255.255.255.0
+            gateway 10.200.0.1
+    dns-nameservers 10.200.0.11
+EOF
+
 elif [ "$HOSTNAME" = "$NODE3_HOSTNAME" ]; then
-nmcli con mod "Wired connection 1" ipv4.addresses "$NODE3/24" ipv4.gateway "$NETGW" ipv4.dns "$NETDNS" ipv4.method "manual"
+printf '%s\n' "on the right host ($HOSTNAME)"
+    rm /etc/network/interfaces
+
+    cat <<EOF > /etc/network/interfaces
+    source /etc/network/interfaces.d/*
+
+    #loopback interface
+    auto lo
+    iface lo inet loopback
+
+    allow-hotplug ens192
+    iface ens192 inet static
+        address $NODE3
+        netmask 255.255.255.0
+        gateway 10.200.0.1
+    dns-nameservers 10.200.0.11
+EOF
+
 else
     printf '%s\n' "uh-oh, wrong host ($HOSTNAME)"
 fi
@@ -79,118 +148,98 @@ if [ "$HOSTNAME" = "$NODE1_HOSTNAME" ]; then
     printf '%s\n' "on the right host ($HOSTNAME)"
     rm /etc/mysql/mariadb.conf.d/50-server.cnf
     cat <<EOF > /etc/mysql/mariadb.conf.d/50-server.cnf
-    [server]
-
-    [mysqld]
-
-    pid-file                = /run/mysqld/mysqld.pid
-    basedir                 = /usr
-
-    #bind-address            = 127.0.0.1
-
-
-    expire_logs_days        = 10
-
-    character-set-server  = utf8mb4
-    collation-server      = utf8mb4_general_ci
-
-
-    [embedded]
-
-    [mariadb]
-
-    [mariadb-10.11]
-
-    [galera]
-    wsrep_on=ON
-    wsrep_provider=/usr/lib/galera/libgalera_smm.so
-    wsrep_cluster_address=gcomm://
-    binlog_format=row
-    default_storage_engine=InnoDB
-    innodb_autoinc_lock_mode=2
-    bind-address=0.0.0.0
-    wsrep_cluster_name="ITCares-APP-Cluster"
-    wsrep_node_address="$NODE1"
-    EOF
+[server]
+[mysqld]
+pid-file                = /run/mysqld/mysqld.pid
+basedir                 = /usr
+#bind-address            = 127.0.0.1
+expire_logs_days        = 10
+character-set-server  = utf8mb4
+collation-server      = utf8mb4_general_ci
+[embedded]
+[mariadb]
+[mariadb-10.11]
+[galera]
+wsrep_on=ON
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+wsrep_cluster_address=gcomm://
+binlog_format=row
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2
+bind-address=0.0.0.0
+wsrep_cluster_name="ITCares-APP-Cluster"
+wsrep_node_address="$NODE1"
+EOF
     elif [ "$HOSTNAME" = "$NODE2_HOSTNAME" ]; then
         printf '%s\n' "on the right host ($HOSTNAME)"
         rm /etc/mysql/mariadb.conf.d/50-server.cnf
         cat <<EOF > /etc/mysql/mariadb.conf.d/50-server.cnf
-    [server]
-
-    [mysqld]
-
-    pid-file                = /run/mysqld/mysqld.pid
-    basedir                 = /usr
-
-    #bind-address            = 127.0.0.1
-
-
-    expire_logs_days        = 10
-    g       
-    character-set-server  = utf8mb4
-    collation-server      = utf8mb4_general_ci
-
-
-    [embedded]
-
-    [mariadb]
-
-    [mariadb-10.11]
-
-    [galera]
-    wsrep_on=ON
-    wsrep_provider=/usr/lib/galera/libgalera_smm.so
-    # Specify cluster nodes
-    wsrep_cluster_address="gcomm://$NODE1,$NODE2,$NODE3"
-    binlog_format=row
-    default_storage_engine=InnoDB
-    innodb_autoinc_lock_mode=2
-    bind-address=0.0.0.0
-    wsrep_cluster_name="$CLUSTERNAME"
-    wsrep_node_address="$NODE2"
-    EOF
+[server]
+[mysqld]
+pid-file                = /run/mysqld/mysqld.pid
+basedir                 = /usr
+#bind-address            = 127.0.0.1
+expire_logs_days        = 10       
+character-set-server  = utf8mb4
+collation-server      = utf8mb4_general_ci
+[embedded]
+[mariadb]
+[mariadb-10.11]
+[galera]
+wsrep_on=ON
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+# Specify cluster nodes
+wsrep_cluster_address="gcomm://$NODE1,$NODE2,$NODE3"
+binlog_format=row
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2
+bind-address=0.0.0.0
+wsrep_cluster_name="$CLUSTERNAME"
+wsrep_node_address="$NODE2"
+EOF
 elif [ "$HOSTNAME" = "$NODE3_HOSTNAME" ]; then
     printf '%s\n' "on the right host ($HOSTNAME)"
     rm /etc/mysql/mariadb.conf.d/50-server.cnf
     cat <<EOF > /etc/mysql/mariadb.conf.d/50-server.cnf
-    [server]
-    
-    [mysqld]
-    
-    pid-file                = /run/mysqld/mysqld.pid
-    basedir                 = /usr
-    
-    #bind-address            = 127.0.0.1
-    
-    
-    expire_logs_days        = 10
-    
-    character-set-server  = utf8mb4
-    collation-server      = utf8mb4_general_ci
-    
-    
-    [embedded]
-    
-    [mariadb]
-    
-    [mariadb-10.11]
-    
-    [galera]
-    wsrep_on=ON
-    wsrep_provider=/usr/lib/galera/libgalera_smm.so
-    # Specify cluster nodes
-    wsrep_cluster_address="gcomm://$NODE1,$NODE2,$NODE3"
-    binlog_format=row
-    default_storage_engine=InnoDB
-    innodb_autoinc_lock_mode=2
-    bind-address=0.0.0.0
-    wsrep_cluster_name="$CLUSTERNAME"
-    wsrep_node_address="$NODE3"
-    EOF
+[server]
+
+[mysqld]
+
+pid-file                = /run/mysqld/mysqld.pid
+basedir                 = /usr
+
+#bind-address            = 127.0.0.1
+
+
+expire_logs_days        = 10
+
+character-set-server  = utf8mb4
+collation-server      = utf8mb4_general_ci
+
+
+[embedded]
+
+[mariadb]
+
+[mariadb-10.11]
+
+[galera]
+wsrep_on=ON
+wsrep_provider=/usr/lib/galera/libgalera_smm.so
+# Specify cluster nodes
+wsrep_cluster_address="gcomm://$NODE1,$NODE2,$NODE3"
+binlog_format=row
+default_storage_engine=InnoDB
+innodb_autoinc_lock_mode=2
+bind-address=0.0.0.0
+wsrep_cluster_name="$CLUSTERNAME"
+wsrep_node_address="$NODE3"
+EOF
 else
     printf '%s\n' "uh-oh, wrong host ($HOSTNAME)"
 fi
+
+systemctl restart networking
 
 if [ "$HOSTNAME" = "$NODE1_HOSTNAME" ]; then
 galera_new_cluster
@@ -210,4 +259,4 @@ echo "Show SQL integrity & status"
 mysql -e "SHOW GLOBAL STATUS LIKE 'wsrep_cluster_size'"
 mysql -e "SHOW GLOBAL STATUS LIKE 'wsrep_%';"
 
-echo "Well done Created by git/aftereffexts"
+echo "Well done Script Created by git/aftereffexts"
