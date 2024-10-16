@@ -4,6 +4,8 @@ $results = @()
 
 $currentDate = Get-Date -Format "yyyy-MM-dd"
 
+$currentTime = Get-Date -Format "HH:mm"
+
 try {
 
     $onboardingState = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows Advanced Threat Protection\Status" -Name "OnboardingState" |
@@ -13,7 +15,8 @@ try {
 
     $result = [pscustomobject]@{
         Date                    = $currentDate              
-        ComputerName            = $env:COMPUTERNAME         
+	Time                    = $currentTime        
+	ComputerName            = $env:COMPUTERNAME         
         OnboardingState         = $onboardingState
         AMEngineVersion         = $mpStatus.AMEngineVersion
         AMRunningMode           = $mpStatus.AMRunningMode
@@ -21,13 +24,16 @@ try {
         AMServiceVersion        = $mpStatus.AMServiceVersion
         ComputerID              = $mpStatus.ComputerID
         OnAccessProtectionEnabled = $mpStatus.OnAccessProtectionEnabled
+	IsTamperProtected       = $mpStatus.IsTamperProtected
+        RealTimeProtectionEnabled = $mpstatus.RealTimeProtectionEnabled
     }
 }
 catch {
   
     $result = [pscustomobject]@{
         Date                    = $currentDate
-        ComputerName            = $env:COMPUTERNAME
+	Time                    = $currentTime        
+ComputerName            = $env:COMPUTERNAME
         OnboardingState         = "Error"
         AMEngineVersion         = "Error"
         AMRunningMode           = "Error"
@@ -35,6 +41,8 @@ catch {
         AMServiceVersion        = "Error"
         ComputerID              = "Error"
         OnAccessProtectionEnabled = "Error"
+	IsTamperProtected       = "Error"
+        RealTimeProtectionEnabled = "Error"
     }
 }
 
