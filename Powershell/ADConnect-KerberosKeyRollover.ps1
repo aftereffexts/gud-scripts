@@ -1,7 +1,22 @@
 # Automated Kerberos Rollover Script by @aftereffexts
 # Place this Script on ADCONNECT Server and Schedule it for 30 days (or howlong u wanna enroll a new key)
 # Change every Variables also the "@urmom.com" ones
+# 1. Create first Encrypted Credential Files with following lines
+#
+#
+# For Azure Creds
+# $credential = Get-Credential
+# $credential.Password | ConvertFrom-SecureString | set-content C:\Administration\Scripts\Email_Encrypted.txt
 
+# For OnPrem Creds
+$credential = Get-Credential
+$credential.Password | ConvertFrom-SecureString | set-content C:\Administration\Scripts\Email_Encrypted.txt
+
+# For Email SMTP Creds
+$credential = Get-Credential
+$credential.Password | ConvertFrom-SecureString | set-content C:\Administration\Scripts\Email_Encrypted.txt
+
+# 2. Change all Variables and test it
 
 $CloudUser = 'changeme@urmom.onmicrosoft.com'
 $CloudEncrypted = Get-Content "C:\path\to\creds\Azure_Encrypted.txt" | ConvertTo-SecureString
